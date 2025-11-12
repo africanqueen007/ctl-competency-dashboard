@@ -16,8 +16,8 @@ import {
   getAuth, 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
-  signOut,
-  sendPasswordResetEmail
+  signOut
+  // sendPasswordResetEmail // <-- Removed
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -300,11 +300,7 @@ const LoginPage = memo(() => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const [view, setView] = useState('login'); 
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetError, setResetError] = useState('');
-  const [resetSuccess, setResetSuccess] = useState('');
+  // --- All password reset states and functions have been removed ---
 
   // --- OPTIMIZATION: Wrap in useCallback ---
   const handleSubmit = useCallback(async (e) => {
@@ -319,45 +315,6 @@ const LoginPage = memo(() => {
     }
   }, [email, password, login]);
   
-  // --- OPTIMIZATION: Wrap in useCallback ---
-  const handlePasswordReset = useCallback(async (e) => {
-    e.preventDefault();
-    setResetLoading(true);
-    setResetError('');
-    setResetSuccess('');
-    
-    const continueUrl = `https://${firebaseConfig.authDomain}`;
-    console.log("Attempting password reset with continue URL:", continueUrl);
-
-    try {
-      const actionCodeSettings = {
-        url: continueUrl, 
-        handleCodeInApp: false
-      };
-      await sendPasswordResetEmail(auth, resetEmail, actionCodeSettings);
-      setResetSuccess('Success! Please check your email (including Spam folder) for the setup link.');
-    } catch (err) {
-      console.error("Password reset error: ", err);
-      let msg = 'An error occurred. Please try again.';
-      
-      if (err.code === 'auth/invalid-continue-uri') {
-        msg = 'Configuration Error: The app\'s domain is not authorized. Please contact your administrator.';
-        console.error(`ERROR: The domain '${continueUrl}' must be added to the "Authorized domains" list in your Firebase Authentication settings.`);
-      } else if (err.code === 'auth/user-not-found') {
-        setResetSuccess('Success! If an account exists, a setup link has been sent to your email.');
-      } else if (err.code === 'auth/invalid-email') {
-        msg = 'Please enter a valid email address.';
-      } else {
-        console.log("Firebase error code:", err.code);
-        msg = 'An error occurred. Please try again later.';
-      }
-      if (!resetSuccess) {
-        setResetError(msg);
-      }
-    }
-    setResetLoading(false);
-  }, [resetEmail]); // Dependency on resetEmail
-
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
@@ -367,83 +324,38 @@ const LoginPage = memo(() => {
           </div>
           <h1 className="text-2xl font-bold text-slate-800">CTL Competency Manager</h1>
           <p className="text-slate-500">
-            {view === 'login' ? 'Sign in to access your dashboard' : 'First-time Login / Reset Password'}
+            Sign in to access your dashboard
           </p>
         </div>
 
-        {view === 'login' ? (
-          <>
-            {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm flex items-center">
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                {error}
-              </div>
-            )}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                <div className="relative">
-                  <UserCircle className="absolute left-3 top-3 text-slate-400 w-5 h-5" />
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="name@ctl.org" required />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 text-slate-400 w-5 h-5" />
-                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="••••••••" required />
-                </div>
-              </div>
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors" disabled={loading}>
-                {loading ? 'Signing In...' : 'Sign In'}
-              </button>
-            </form>
-            <div className="text-center mt-4">
-              <button 
-                onClick={() => setView('reset')}
-                className="text-sm font-medium text-blue-600 hover:text-blue-700"
-              >
-                First-time Login / Forgot Password?
-              </button>
+        {/* --- Simplified Login Form --- */}
+        <>
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm flex items-center">
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              {error}
             </div>
-          </>
-        ) : (
-          <>
-            {resetSuccess && (
-              <div className="bg-green-50 text-green-700 p-3 rounded-lg mb-4 text-sm flex items-center">
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                {resetSuccess}
+          )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+              <div className="relative">
+                <UserCircle className="absolute left-3 top-3 text-slate-400 w-5 h-5" />
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="name@ctl.org" required />
               </div>
-            )}
-            {resetError && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm flex items-center">
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                {resetError}
-              </div>
-            )}
-            <form onSubmit={handlePasswordReset} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                <p className="text-xs text-slate-500 mb-2">Enter your work email to receive a password setup link.</p>
-                <div className="relative">
-                  <UserCircle className="absolute left-3 top-3 text-slate-400 w-5 h-5" />
-                  <input type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="name@ctl.org" required />
-                </div>
-              </div>
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors" disabled={resetLoading}>
-                {resetLoading ? 'Sending...' : 'Send Setup Link'}
-              </button>
-            </form>
-            <div className="text-center mt-4">
-              <button 
-                onClick={() => setView('login')}
-                className="text-sm font-medium text-blue-600 hover:text-blue-700"
-              >
-                Back to Login
-              </button>
             </div>
-          </>
-        )}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-slate-400 w-5 h-5" />
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="••••••••" required />
+              </div>
+            </div>
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors" disabled={loading}>
+              {loading ? 'Signing In...' : 'Sign In'}
+            </button>
+          </form>
+        </>
       </div>
     </div>
   );
@@ -1267,13 +1179,14 @@ const SupervisorTeamView = memo(({ user }) => {
           <table className="w-full">
             <thead className="bg-slate-50">
               <tr>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase py-3 px-6">Name</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase py-3 px-6">Position</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase py-3 px-6">Position Grade</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase py-3 px-6">Position Years</th>
+                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6">Name</th>
+                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6">Position</th>
+                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6">Position Grade</th>
+                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6">Position Years</th>
                 {user.role === 'admin' && <th className="text-left text-xs font-semibold text-slate-500 uppercase py-3 px-6">Division</th>}
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase py-3 px-6">Total Gaps</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase py-3 px-6">Avg. Gap Size</th>
+                {/* --- "Supervisor" column removed as requested --- */}
+                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6">Total Gaps</th>
+                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider py-3 px-6">Avg. Gap Size</th>
                 <th className="text-left text-xs font-semibold text-slate-500 uppercase py-3 px-6">Actions</th>
               </tr>
             </thead>
@@ -1291,6 +1204,7 @@ const SupervisorTeamView = memo(({ user }) => {
                     <td className="py-4 px-6 text-sm text-slate-600">{staff.grade}</td>
                     <td className="py-4 px-6 text-sm text-slate-600">{staff.positionYears}</td>
                     {user.role === 'admin' && <td className="py-4 px-6 text-sm text-slate-600">{staff.division}</td>}
+                    {/* --- "Supervisor" cell removed as requested --- */}
                     <td className="py-4 px-6 text-sm text-slate-600 font-medium">{staff.summary.totalGaps}</td>
                     <td className="py-4 px-6 text-sm text-slate-600">{staff.summary.avgGap.toFixed(2)}</td>
                     <td className="py-4 px-6">
